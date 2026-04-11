@@ -1,0 +1,50 @@
+import { getFirestore, collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
+
+/**
+ * Deletes entries in a Firestore collection based on matching parameters, batching deletions into a single request.
+ * @param {string} collectionName - The Firestore collection name.
+ * @param {Object} matchParams - An object with key-value pairs to match entries.
+ */
+export const deleteMatchingEntriesByAllFields = async ({ collectionName, matchParams }) => {
+  try {
+    const db = getFirestore();
+    const colRef = collection(db, collectionName);
+
+    // If we're deleting by ID, handle it differently
+    if (matchParams.id) {
+      const docRef = doc(db, collectionName, matchParams.id);
+      await writeBatch(db).delete(docRef).commit();
+      console.log(`Document with ID ${matchParams.id} deleted successfully.`);
+      return;
+    }
+
+    // Build the query based on matchParams
+    let q = query(colRef);
+    for (const [key, value] of Object.entries(matchParams)) {
+      q = query(q, where(key, "==", value));
+    }
+    
+    // Execute the query to find matching documents
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log("No matching documents found.");
+      return;
+    }
+
+    // Initialize a write batch
+    const batch = writeBatch(db);
+
+    // Add each matching document deletion to the batch
+    querySnapshot.forEach((docSnapshot) => {
+      const docRef = doc(db, collectionName, docSnapshot.id);
+      batch.delete(docRef);
+    });
+
+    // Commit the batch
+    await batch.commit();
+    console.log(`${querySnapshot.size} document(s) deleted successfully.`);
+  } catch (error) {
+    console.error("Error deleting Firestore entries:", error);
+  }
+};

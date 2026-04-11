@@ -1,0 +1,19 @@
+<svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M11.5 11.5V5.75" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M6.87378 13.9336L11.5 11.5" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="11.5" cy="11.5" r="11" stroke="black"/>
+<path d="M18.6875 11.5H20.8438" stroke="black" stroke-linecap="round"/>
+<path d="M2.15625 11.5H4.3125" stroke="black" stroke-linecap="round"/>
+<path d="M11.5 20.8438V18.6875" stroke="black" stroke-linecap="round"/>
+<path d="M15.8125 18.3281L16.5954 19.5337" stroke="black" stroke-linecap="round"/>
+<path d="M7.1875 18.3281L6.40458 19.5337" stroke="black" stroke-linecap="round"/>
+<path d="M18.6875 15.0938L19.8792 15.8976" stroke="black" stroke-linecap="round"/>
+<path d="M4.3125 15.0938L3.12076 15.8976" stroke="black" stroke-linecap="round"/>
+<path d="M11.5 2.15625V4.3125" stroke="black" stroke-linecap="round"/>
+<path d="M15.8125 4.67188L16.5954 3.46629" stroke="black" stroke-linecap="round"/>
+<path d="M7.1875 4.67188L6.40458 3.46629" stroke="black" stroke-linecap="round"/>
+<path d="M18.6875 7.90625L19.8792 7.10241" stroke="black" stroke-linecap="round"/>
+<path d="M4.3125 7.90625L3.12076 7.10241" stroke="black" stroke-linecap="round"/>
+<path d="M11.5 4.3125V2.15625" stroke="black" stroke-linecap="round"/>
+<circle cx="11.5" cy="11.5" r="1.4375" fill="black"/>
+</svg>

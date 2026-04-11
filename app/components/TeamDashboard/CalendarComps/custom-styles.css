@@ -1,0 +1,23 @@
+.rbc-current-time-indicator {
+    height: 4px; /* Thickness of the bar */
+    background-color: #007bff; /* Custom color */
+    border-radius: 2px; /* Optional: Rounded edges */
+  }
+  
+
+.rbc-event .rbc-event-content {
+  font-size: 11px; /* Change font size for event title and time */
+  color:#ffffff;
+  border-color: #ffffff;
+}
+
+.rbc-event-label {
+  font-size: 9px; /* Adjust font size for the event time */
+  color:#ffffff;
+  display:none;
+}
+
+/* Make cursor a pointer when hovering over an event */
+.rbc-event {
+  cursor: pointer;
+}
