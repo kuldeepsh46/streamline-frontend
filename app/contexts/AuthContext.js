@@ -1,62 +1,91 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { monitorAuthState } from '../hooks/authHooks/firebaseAuth'; // Ensure this is correctly imported
+import { monitorAuthState, logout } from '../hooks/authHooks/firebaseAuth'; 
 import { getUserByFirebaseId, getDependantsByFirebaseId } from '../hooks/firestoreHooks/user/getUser';
 import { getEntriesByMatching } from '../hooks/firestoreHooks/retrieving/getEntriesByMatching';
 
-// Create the AuthContext
 const AuthContext = createContext();
 
-// Custom hook to use AuthContext
 export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-// AuthProvider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isFetchingUserInfo,setIsFetchingUserInfo]=useState(true)
-  const [userInfo, setUserInfo] = useState({"userData":null, "otherAthletes":null});
-  const [loadingNewPage,setLoadingNewPage]=useState(false)
-  const [loadingNewPageMessage,setLoadingNewPageMessage]=useState("")
-  const [noLoading,setNoLoading]=useState(false)
+  const [isFetchingUserInfo, setIsFetchingUserInfo] = useState(true);
+  const [userInfo, setUserInfo] = useState({ "userData": null, "otherAthletes": null });
+  const [loadingNewPage, setLoadingNewPage] = useState(false);
+  const [loadingNewPageMessage, setLoadingNewPageMessage] = useState("");
+  const [noLoading, setNoLoading] = useState(false);
+
   useEffect(() => {
-    const unsubscribe = monitorAuthState(async(currentUser) => {
-      setUser(currentUser || null);
+    const unsubscribe = monitorAuthState(async (currentUser) => {
+      if (currentUser) {
+        try {
+          // 1. Fetch the user profile from Firestore
+          const userData = await getUserByFirebaseId({ firebaseId: currentUser.uid });
 
-      if (currentUser){
-      const userData = await getUserByFirebaseId({firebaseId:currentUser.uid})
-      const otherAthletes = await getDependantsByFirebaseId({firebaseId:currentUser.uid})
-        console.log("OTHER ATHLS", otherAthletes)
-        if(otherAthletes){
-        setUserInfo((prevInfo) => ({
-        ...prevInfo, // Retain existing keys in the state object
-        userData: userData,
-        otherAthletes: otherAthletes,
-        }))
-        } else{
-          setUserInfo((prevInfo) => ({
-            ...prevInfo, // Retain existing keys in the state object
-            userData: userData,
-            otherAthletes:["nothing"]
-            }))
+          // 🛡️ CRITICAL DEACTIVATION CHECK
+          // If the account is inactive, clear EVERYTHING and redirect.
+          if (userData?.status === "inactive") {
+             console.warn("Access Denied: Account is inactive.");
+             setUser(null);
+             setUserInfo({ "userData": null, "otherAthletes": null });
+             setIsFetchingUserInfo(false);
+             await logout(); // Logs out of Firebase
+             window.location.href = "/"; // Force redirect to homepage
+             return; 
+          }
+
+          // 2. Process Team Specific Data
+          if (userData?.accountType === "team") {
+            const teamInfo = await getEntriesByMatching({
+              collectionName: "Team",
+              fields: { firebaseId: currentUser.uid }
+            });
+
+            // Secondary Check: If the team record itself is inactive
+            if (teamInfo[0]?.status === "inactive") {
+              setUser(null);
+              setUserInfo({ "userData": null, "otherAthletes": null });
+              setIsFetchingUserInfo(false);
+              await logout();
+              window.location.href = "/";
+              return;
+            }
+
+            // Set User Info for Team
+            const otherAthletes = await getDependantsByFirebaseId({ firebaseId: currentUser.uid });
+            setUser(currentUser);
+            setUserInfo({
+              userData: userData,
+              otherAthletes: otherAthletes || ["nothing"],
+              teamInfo: teamInfo[0],
+            });
+          } else {
+            // 3. Process Regular User Data
+            const otherAthletes = await getDependantsByFirebaseId({ firebaseId: currentUser.uid });
+            setUser(currentUser);
+            setUserInfo({
+              userData: userData,
+              otherAthletes: otherAthletes || ["nothing"],
+            });
+          }
+
+          setIsFetchingUserInfo(false);
+
+        } catch (error) {
+          console.error("Error in AuthProvider:", error);
+          setIsFetchingUserInfo(false);
         }
-        
-        if (userData.accountType=="team"){
-          const teamInfo = await getEntriesByMatching({collectionName:"Team",fields:{firebaseId:currentUser.uid}})
-          setUserInfo((prevInfo) => ({
-            ...prevInfo, // Retain existing keys in the state object
-            teamInfo: teamInfo[0],
-            }))
-        }
-        setIsFetchingUserInfo(false)
-      }else{
-        setIsFetchingUserInfo(false)
+      } else {
+        // No current user (logged out)
+        setUser(null);
+        setUserInfo({ "userData": null, "otherAthletes": null });
+        setIsFetchingUserInfo(false);
       }
-      
     });
-
 
     return () => {
       if (typeof unsubscribe === 'function') {
@@ -66,7 +95,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, userInfo, setUserInfo ,isFetchingUserInfo,loadingNewPage,setLoadingNewPage,loadingNewPageMessage,setLoadingNewPageMessage,noLoading,setNoLoading}}>
+    <AuthContext.Provider value={{ 
+        user, setUser, userInfo, setUserInfo, 
+        isFetchingUserInfo, loadingNewPage, setLoadingNewPage, 
+        loadingNewPageMessage, setLoadingNewPageMessage, 
+        noLoading, setNoLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,81 +10,56 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import LoadingSubScreen from "@/app/components/loadingSubscreen";
 import MyCalendar from "@/app/components/TeamDashboard/CalendarComps/Calendar";
 import ModalTemplate from "@/app/components/ModalTemplate";
-import InfoIcon from "../../../public/InfoIcon.svg"
-import LocationIcon from "../../../public/LocationIcon.svg"
-import NotifIcon  from "../../../public/NotifIcon.svg"
-import PeopleIcon  from "../../../public/PeopleIcon.svg"
-import ClockIcon  from "../../../public/ClockIcon.svg"
-import CalendarIcon  from "../../../public/CalendarIcon.svg"
-import PersonEntry from "@/app/components/TeamDashboard/CalendarComps/PersonEntry";
+// import InfoIcon from "../../../public/InfoIcon.svg"
+// import LocationIcon from "../../../public/LocationIcon.svg"
+// import NotifIcon  from "../../../public/NotifIcon.svg"
+// import PeopleIcon  from "../../../public/PeopleIcon.svg"
+// import ClockIcon  from "../../../public/ClockIcon.svg"
+// import CalendarIcon  from "../../../public/CalendarIcon.svg"
+// import PersonEntry from "@/app/components/TeamDashboard/CalendarComps/PersonEntry";
 import EventModal from "@/app/components/TeamDashboard/CalendarComps/EventModal";
 import AddAvailibilityModal from "@/app/components/TeamDashboard/CalendarComps/AddAvailabilityModal";
 import { transformImagesListToJsons } from "@/app/hooks/firestoreHooks/retrieving/adjustingRetrievedData";
 import { parseAddress } from "@/app/hooks/addressExtraction";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import getXWeeksData from "@/app/hooks/calendarHooks/getWeeksData";
-import { calculateAge } from "@/app/hooks/miscellaneous";
+// import { calculateAge } from "@/app/hooks/miscellaneous";
 import LocationThumbnail from "@/app/components/TeamProfileEditorComponents/ProfileLocationComps/LocationThumbnail";
 
 export default function TeamDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isPending, setIsPending] = useState(false);
-    const {userInfo,loadingNewPage,setLoadingNewPage}= useAuth();
+    const [isDeactivated, setIsDeactivated] = useState(false); 
+    const {userInfo, loadingNewPage, setLoadingNewPage} = useAuth();
 
-    const [locationInfo,setLocationInfo]=useState({})
-    const [allParsedAddresess,setAllParsedAddresses]=useState([])
-    const [currentLocation,setCurrentLocation]=useState([])
+    const [locationInfo, setLocationInfo] = useState({})
+    const [allParsedAddresess, setAllParsedAddresses] = useState([])
+    const [currentLocation, setCurrentLocation] = useState([])
 
     const availableColor = CONFIG.calendar.blockColors.available
     const pendingColor = CONFIG.calendar.blockColors.pending
     const confirmedColor = CONFIG.calendar.blockColors.confirmed
 
-    const statuses = [{"Availability":availableColor},{"Pending Approval":pendingColor},{"Confirmed Lesson":confirmedColor}]
+    const statuses = [{"Availability":availableColor}, {"Pending Approval":pendingColor}, {"Confirmed Lesson":confirmedColor}]
 
     const triggerTimeRef = useRef(null); 
     const intervalRef = useRef(null);
     const timesOfDay = CONFIG.timesOfDay
-    const [retrievedCoaches,setRetrievedCoaches] = useState(null)
-    const [currLocoCoaches,setCurrLocoCoaches] = useState(null)
+    const [retrievedCoaches, setRetrievedCoaches] = useState(null)
+    const [currLocoCoaches, setCurrLocoCoaches] = useState(null)
 
-    const [xWeeks,setXWeeks]=useState(3)
-    const [currWeekNum,setCurrWeekNum]=useState(0) 
+    const [xWeeks, setXWeeks] = useState(3)
+    const [currWeekNum, setCurrWeekNum] = useState(0) 
 
-    const [currWeekEvents,setCurrWeekEvents] = useState(null)
-
-    // --- REVISED CALENDAR BOUNDS FIX ---
-    // const calendarBounds = useMemo(() => {
-    //     const minDate = new Date();
-    //     const maxDate = new Date();
-        
-    //     // Ensure we have numbers. Fallback to 8 AM and 9 PM (21).
-    //     let startH = parseInt(currentLocation?.minHour);
-    //     let endH = parseInt(currentLocation?.maxHour);
-
-    //     if (isNaN(startH)) startH = 8;
-    //     if (isNaN(endH)) endH = 21;
-
-    //     // Safety: If database has weird values where start is after end
-    //     if (startH >= endH) endH = startH + 1;
-
-    //     minDate.setHours(startH, 0, 0, 0);
-    //     maxDate.setHours(endH, 0, 0, 0);
-
-    //     return { min: minDate, max: maxDate };
-    // }, [currentLocation?.minHour, currentLocation?.maxHour]);
+    const [currWeekEvents, setCurrWeekEvents] = useState(null)
 
     const calendarBounds = useMemo(() => {
-    const minDate = new Date();
-    const maxDate = new Date();
-    
-    // Force min to 0 (Midnight) so 1:00 AM slots are visible
-    minDate.setHours(0, 0, 0, 0); 
-    
-    // Set max to 11 PM
-    maxDate.setHours(23, 0, 0, 0); 
-
-    return { min: minDate, max: maxDate };
-}, []);
+        const minDate = new Date();
+        const maxDate = new Date();
+        minDate.setHours(0, 0, 0, 0); 
+        maxDate.setHours(23, 0, 0, 0); 
+        return { min: minDate, max: maxDate };
+    }, []);
 
     function getMinMaxHours(data) {
         if (!data || data.length === 0) {
@@ -105,9 +80,9 @@ export default function TeamDashboard() {
         };
     }
       
-    const [currentDate,setCurrentDate]=useState(new Date())
+    const [currentDate, setCurrentDate] = useState(new Date())
 
-    function filterItemsByWeekAndStatus(items,currentDate) {
+    function filterItemsByWeekAndStatus(items, currentDate) {
         if (!items) return [];
         const now = new Date(currentDate);
         const startOfWeek = new Date(now);
@@ -128,39 +103,38 @@ export default function TeamDashboard() {
         }).sort((a, b) => new Date(a.start) - new Date(b.start));
     }    
 
-    const [events,setEvents] = useState(null);
-    const [currDay,setCurrDay]=useState(new Date())
-    const [isCalendarLoading,setIsCalendarLoading]=useState(true)
-    const [selectedLocation,setSelectedLocation] = useState(null)
+    const [events, setEvents] = useState(null);
+    const [currDay, setCurrDay] = useState(new Date())
+    const [isCalendarLoading, setIsCalendarLoading] = useState(true)
+    const [selectedLocation, setSelectedLocation] = useState(null)
 
-    useEffect(()=>{
+    useEffect(() => {
         const updateCal = async() => {
             if(!currentLocation?.id) return;
             setIsCalendarLoading(true)
             const newDate = new Date(currDay)
-            newDate.setDate(currDay.getDate()+currWeekNum*7)
-            const weekEvents = await getXWeeksData({locationId:currentLocation.id,x:xWeeks,currDay:newDate})
+            newDate.setDate(currDay.getDate() + currWeekNum * 7)
+            const weekEvents = await getXWeeksData({locationId: currentLocation.id, x: xWeeks, currDay: newDate})
             
-            // Map strings to Date objects for the calendar library to see them
             const formattedEvents = weekEvents?.map(event => ({
                 ...event,
                 start: new Date(event.start),
                 end: new Date(event.end)
             })) || [];
 
-            setCurrWeekEvents(filterItemsByWeekAndStatus(formattedEvents,currentDate))
+            setCurrWeekEvents(filterItemsByWeekAndStatus(formattedEvents, currentDate))
             setEvents(formattedEvents)
             setCurrWeekNum(0)
             setCurrDay(newDate)
             setIsCalendarLoading(false)
         }
         
-        if (Math.abs(currWeekNum)>xWeeks){
+        if (Math.abs(currWeekNum) > xWeeks) {
             updateCal()
-        }else if (events) {
-            setCurrWeekEvents(filterItemsByWeekAndStatus(events,currentDate))
+        } else if (events) {
+            setCurrWeekEvents(filterItemsByWeekAndStatus(events, currentDate))
         }
-    },[currWeekNum])
+    }, [currWeekNum])
 
     useEffect(() => {
         if (!userInfo?.userData?.firebaseId) return; 
@@ -175,10 +149,13 @@ export default function TeamDashboard() {
                 
                 if (teamResults && teamResults.length > 0) {
                     const teamDoc = teamResults[0];
-                    if (teamDoc.status !== "Active") {
+                    if (teamDoc.status === "inactive") {
+                        setIsDeactivated(true);
+                    } else if (teamDoc.status !== "Active") {
                         setIsPending(true);
                     } else {
                         setIsPending(false);
+                        setIsDeactivated(false);
                         await getLocationInfo(teamDoc.id); 
                     }
                 } else {
@@ -191,160 +168,90 @@ export default function TeamDashboard() {
             }
         };
 
-        // async function getLocationInfo(id) {
-        //     const [locationsInfo, firestoreCoaches] = await Promise.all([
-        //         getEntriesByMatching({ collectionName: "Location", fields: { teamId: id } }),
-        //         getEntriesByMatching({ collectionName: 'Coach', fields: { teamId: id } })
-        //     ]);
-
-        //     if (!locationsInfo || locationsInfo.length === 0) {
-        //         console.log("ks")
-        //         setIsLoading(false);
-        //         return;
-        //     }
-
-        //     setRetrievedCoaches(firestoreCoaches);
-        //     const parsedAddresses = [];
-        //     const retrievedLocations = {};
-
-        //     for (const location of locationsInfo) {
-        //         const [imgs, hrs, types, skills] = await Promise.all([
-        //             getEntriesByMatching({ collectionName: "Images", fields: { teamId: id, locationId: location.id, photoType: "location" } }),
-        //             getEntriesByMatching({ collectionName: "OperationDayTime", fields: { locationId: location.id } }),
-        //             getEntriesByMatching({ collectionName: "LessonType", fields: { locationId: location.id } }),
-        //             getEntriesByMatching({ collectionName: "SkillLevel", fields: { locationId: location.id } })
-        //         ]);
-
-        //         location.images = transformImagesListToJsons({ list: imgs });
-        //         location.skillLevels = skills ? skills.map(s => Object.keys(s)).flat() : [];
-        //         location.lessonTypes = types ? types.map(t => Object.keys(t)).flat() : [];
-
-        //         const { minHour, maxHour } = getMinMaxHours(hrs);
-        //         const parsedAddress = parseAddress({ address: location.address }) || {};
-
-        //         parsedAddresses.push(parsedAddress);
-        //         location.parsedAddress = parsedAddress;
-        //         location.maxHour = maxHour;
-        //         location.minHour = minHour;
-
-        //         retrievedLocations[location.id] = location;
-        //     }
-
-        //     const firstLoc = locationsInfo[0];
-        //     const weekEvents = await getXWeeksData({ locationId: firstLoc.id, x: xWeeks, currDay: currDay });
-
-        //     // Fix for empty calendar: ensure "start" and "end" are Date objects
-        //     const formattedEvents = weekEvents?.map(event => ({
-        //         ...event,
-        //         start: new Date(event.start),
-        //         end: new Date(event.end)
-        //     })) || [];
-
-        //     setCurrWeekEvents(filterItemsByWeekAndStatus(formattedEvents, currentDate));
-        //     setEvents(formattedEvents);
-        //     setCurrentLocation(firstLoc);
-        //     setCurrLocoCoaches(firestoreCoaches.filter(c => c.locationId === firstLoc.id));
-        //     setSelectedLocation(firstLoc.id);
-        //     setLocationInfo(retrievedLocations);
-        //     setAllParsedAddresses(parsedAddresses);
-            
-        //     setIsCalendarLoading(false);
-        // }
-
         async function getLocationInfo(id) {
-    const [locationsInfo, firestoreCoaches] = await Promise.all([
-        getEntriesByMatching({ collectionName: "Location", fields: { teamId: id } }),
-        getEntriesByMatching({ collectionName: 'Coach', fields: { teamId: id } })
-    ]);
+            const [locationsInfo, firestoreCoaches] = await Promise.all([
+                getEntriesByMatching({ collectionName: "Location", fields: { teamId: id } }),
+                getEntriesByMatching({ collectionName: 'Coach', fields: { teamId: id } })
+            ]);
 
-    if (!locationsInfo || locationsInfo.length === 0) {
-        setIsLoading(false);
-        return;
-    }
+            if (!locationsInfo || locationsInfo.length === 0) {
+                setIsLoading(false);
+                return;
+            }
 
-    setRetrievedCoaches(firestoreCoaches);
-    const retrievedLocations = {};
-    const parsedAddresses = [];
+            setRetrievedCoaches(firestoreCoaches);
+            const retrievedLocations = {};
+            const parsedAddresses = [];
 
-    for (const location of locationsInfo) {
-        const [imgs, hrs, types, skills] = await Promise.all([
-            getEntriesByMatching({ collectionName: "Images", fields: { teamId: id, locationId: location.id, photoType: "location" } }),
-            getEntriesByMatching({ collectionName: "OperationDayTime", fields: { locationId: location.id } }),
-            getEntriesByMatching({ collectionName: "LessonType", fields: { locationId: location.id } }),
-            getEntriesByMatching({ collectionName: "SkillLevel", fields: { locationId: location.id } })
-        ]);
+            for (const location of locationsInfo) {
+                const [imgs, hrs, types, skills] = await Promise.all([
+                    getEntriesByMatching({ collectionName: "Images", fields: { teamId: id, locationId: location.id, photoType: "location" } }),
+                    getEntriesByMatching({ collectionName: "OperationDayTime", fields: { locationId: location.id } }),
+                    getEntriesByMatching({ collectionName: "LessonType", fields: { locationId: location.id } }),
+                    getEntriesByMatching({ collectionName: "SkillLevel", fields: { locationId: location.id } })
+                ]);
 
-        location.images = transformImagesListToJsons({ list: imgs });
-        location.skillLevels = skills ? skills.map(s => Object.keys(s)).flat() : [];
-        location.lessonTypes = types ? types.map(t => Object.keys(t)).flat() : [];
-        
-        // Log the exact keys found in one registration slot to check field names
-        // if (hrs && hrs.length > 0) {
-        //     console.log("DEBUG: One Registration Slot Sample:", hrs[0]);
-        // }
+                location.images = transformImagesListToJsons({ list: imgs });
+                location.skillLevels = skills ? skills.map(s => Object.keys(s)).flat() : [];
+                location.lessonTypes = types ? types.map(t => Object.keys(t)).flat() : [];
+                
+                const { minHour, maxHour } = getMinMaxHours(hrs);
+                location.parsedAddress = parseAddress({ address: location.address }) || {};
+                location.maxHour = maxHour;
+                location.minHour = minHour;
+                location.operatingHours = hrs || []; 
 
-        const { minHour, maxHour } = getMinMaxHours(hrs);
-        location.parsedAddress = parseAddress({ address: location.address }) || {};
-        location.maxHour = maxHour;
-        location.minHour = minHour;
-        location.operatingHours = hrs || []; 
+                retrievedLocations[location.id] = location;
+                parsedAddresses.push(location.parsedAddress);
+            }
 
-        retrievedLocations[location.id] = location;
-        parsedAddresses.push(location.parsedAddress);
-    }
+            const firstLoc = locationsInfo[0];
+            const weekEvents = await getXWeeksData({ locationId: firstLoc.id, x: xWeeks, currDay: currDay });
 
-    const firstLoc = locationsInfo[0];
-    const weekEvents = await getXWeeksData({ locationId: firstLoc.id, x: xWeeks, currDay: currDay });
+            const dayMap = { "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6 };
+            
+            const generatedSlots = (firstLoc.operatingHours || []).map(slot => {
+                const targetDayIndex = dayMap[slot.day];
+                if (targetDayIndex === undefined) return null;
 
-    // --- IMPROVED MAPPING LOGIC ---
-    const dayMap = { "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6 };
-    
-    const generatedSlots = (firstLoc.operatingHours || []).map(slot => {
-        // Find the target day of the current week
-        const targetDayIndex = dayMap[slot.day];
-        if (targetDayIndex === undefined) return null;
+                const slotDate = new Date(currentDate);
+                const currentDayIndex = slotDate.getDay();
+                const diff = targetDayIndex - currentDayIndex;
+                
+                const start = new Date(slotDate);
+                start.setDate(slotDate.getDate() + diff);
+                start.setHours(parseInt(slot.hour), 0, 0, 0);
+                
+                const end = new Date(start);
+                end.setHours(start.getHours() + 1);
 
-        const slotDate = new Date(currentDate);
-        const currentDayIndex = slotDate.getDay();
-        const diff = targetDayIndex - currentDayIndex;
-        
-        const start = new Date(slotDate);
-        start.setDate(slotDate.getDate() + diff);
-        start.setHours(parseInt(slot.hour), 0, 0, 0);
-        
-        const end = new Date(start);
-        end.setHours(start.getHours() + 1);
+                return {
+                    id: `reg-${slot.id}`,
+                    title: "Available",
+                    status: "Availability",
+                    start: start,
+                    end: end,
+                };
+            }).filter(s => s !== null);
 
-        return {
-            id: `reg-${slot.id}`,
-            title: "Available",
-            status: "Availability",
-            start: start,
-            end: end,
-        };
-    }).filter(s => s !== null);
+            const formattedEvents = (weekEvents || []).map(event => ({
+                ...event,
+                start: event.start?.seconds ? new Date(event.start.seconds * 1000) : new Date(event.start),
+                end: event.end?.seconds ? new Date(event.end.seconds * 1000) : new Date(event.end)
+            }));
 
-    const formattedEvents = (weekEvents || []).map(event => ({
-        ...event,
-        start: event.start?.seconds ? new Date(event.start.seconds * 1000) : new Date(event.start),
-        end: event.end?.seconds ? new Date(event.end.seconds * 1000) : new Date(event.end)
-    }));
-
-    // Combine both specific events and registration settings
-    const allEvents = [...formattedEvents, ...generatedSlots];
-    
-    // console.log("DEBUG: Final Event Count:", allEvents.length);
-
-    setEvents(allEvents);
-    setCurrWeekEvents(filterItemsByWeekAndStatus(allEvents, currentDate));
-    
-    setCurrentLocation(firstLoc);
-    setCurrLocoCoaches(firestoreCoaches.filter(c => c.locationId === firstLoc.id));
-    setSelectedLocation(firstLoc.id);
-    setLocationInfo(retrievedLocations);
-    setAllParsedAddresses(parsedAddresses);
-    setIsCalendarLoading(false);
-}
+            const allEvents = [...formattedEvents, ...generatedSlots];
+            
+            setEvents(allEvents);
+            setCurrWeekEvents(filterItemsByWeekAndStatus(allEvents, currentDate));
+            
+            setCurrentLocation(firstLoc);
+            setCurrLocoCoaches(firestoreCoaches.filter(c => c.locationId === firstLoc.id));
+            setSelectedLocation(firstLoc.id);
+            setLocationInfo(retrievedLocations);
+            setAllParsedAddresses(parsedAddresses);
+            setIsCalendarLoading(false);
+        }
 
         initializeDashboard();
     }, [userInfo?.userData?.firebaseId]); 
@@ -355,12 +262,12 @@ export default function TeamDashboard() {
     const closeEventModal = () => setIsEventModalOpen(false);
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [addAvailibilityModalKey,setAddAvailibilityModalKey]=useState(0)
+    const [addAvailibilityModalKey, setAddAvailibilityModalKey] = useState(0)
     const openAddModal = () => {setIsAddModalOpen(true)};
-    const closeAddModal = () => {setIsAddModalOpen(false),setAddAvailibilityModalKey(1+addAvailibilityModalKey)};
+    const closeAddModal = () => {setIsAddModalOpen(false), setAddAvailibilityModalKey(1 + addAvailibilityModalKey)};
 
     const parentDivRef = useRef(null)
-    const [selectedPage,setSelectedPage]=useState("dashboard")
+    const [selectedPage, setSelectedPage] = useState("dashboard")
 
     const handleSelectEvent = (event) => {
         setPickedEvent(event); 
@@ -373,7 +280,7 @@ export default function TeamDashboard() {
 
     const pullLocoInfo = async({locationId}) => {
         setIsCalendarLoading(true)
-        const weekEvents = await getXWeeksData({locationId:locationId,x:xWeeks,currDay:currDay})
+        const weekEvents = await getXWeeksData({locationId: locationId, x: xWeeks, currDay: currDay})
         
         const formattedEvents = weekEvents?.map(event => ({
             ...event,
@@ -381,7 +288,7 @@ export default function TeamDashboard() {
             end: new Date(event.end)
         })) || [];
 
-        setCurrWeekEvents(filterItemsByWeekAndStatus(formattedEvents,currentDate))
+        setCurrWeekEvents(filterItemsByWeekAndStatus(formattedEvents, currentDate))
         setEvents(formattedEvents)
         setCurrentLocation(locationInfo[locationId])
         setCurrLocoCoaches(retrievedCoaches.filter(coach => locationId === coach.locationId));
@@ -390,9 +297,27 @@ export default function TeamDashboard() {
     }
 
     return (
-    <div className="flex flex-col no-scroll overflow-x-hidden justify-center items-center"
+    <div className="relative flex flex-col no-scroll overflow-x-hidden justify-center items-center"
         style={{ overflow: isEventModalOpen || isAddModalOpen ? 'hidden' : '' }}>
-        <DynamicScreen className={`${isEventModalOpen || isAddModalOpen ? "min-h-screen w-[98%] no-scroll" : "w-[99%] min-h-screen no-scroll"}`}>
+        
+        {/* --- MULTI-TAB DEACTIVATION OVERLAY --- */}
+        {(!userInfo || !userInfo.userData) && !isLoading && (
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/60 backdrop-blur-md">
+                <div className="bg-white p-10 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-md border border-gray-100 mx-4">
+                    <LoadingSubScreen loadingMessage="" />
+                    <h2 className="text-xl font-bold text-streamlineBlue mt-4">Verifying session...</h2>
+                    <p className="text-gray-500 mt-2 mb-6">Your session is no longer active. Redirecting...</p>
+                    <div 
+                        className="px-6 py-2 bg-streamlineBlue text-white rounded-full font-bold cursor-pointer"
+                        onClick={() => window.location.href = "/"}
+                    >
+                        Go to Homepage
+                    </div>
+                </div>
+            </div>
+        )}
+
+        <DynamicScreen className={`${isEventModalOpen || isAddModalOpen ? "min-h-screen w-[98%] no-scroll" : "w-[99%] min-h-screen no-scroll"} ${(!userInfo || !userInfo.userData) ? "blur-sm pointer-events-none" : ""}`}>
 
             <div className="flex flex-col min-h-screen no-scroll">
                 <TeamDashHeader selectedPage={"dashboard"} setSelectedPage={setSelectedPage} setIsLoading={setIsLoading} />
@@ -402,6 +327,15 @@ export default function TeamDashboard() {
                         <LoadingSubScreen loadingMessage={!loadingNewPage ? `Loading team ${selectedPage}` : ""} />
                     </div>
                 ) 
+                : isDeactivated ? (
+                    <div className="flex flex-col items-center justify-center flex-grow min-h-[60vh] p-10 text-center">
+                        <div className="bg-white border border-red-100 shadow-xl p-10 rounded-2xl max-w-lg">
+                            <h2 className="text-2xl font-bold text-red-600 mb-2">Account Deactivated</h2>
+                            <p className="text-gray-500">This team account has been deactivated. Please contact the administrator for more information.</p>
+                            <button onClick={() => window.location.href = "/"} className="mt-8 px-6 py-2 bg-red-600 text-white rounded-full">Go to Homepage</button>
+                        </div>
+                    </div>
+                )
                 : isPending ? (
                     <div className="flex flex-col items-center justify-center flex-grow min-h-[60vh] p-10 text-center">
                         <div className="bg-white border border-gray-100 shadow-xl p-10 rounded-2xl max-w-lg">
@@ -433,18 +367,14 @@ export default function TeamDashboard() {
                                 isCalendarLoading={isCalendarLoading} 
                                 setIsCalendarLoading={setIsCalendarLoading} 
                                 currWeekNum={currWeekNum} 
-                                
-                                // THE FIX: Use safe calendarBounds.min/max
                                 min={calendarBounds.min}
                                 max={calendarBounds.max}
-                                
                                 currentDate={currentDate} 
                                 setCurrentDate={setCurrentDate} 
                                 fullAddress={currentLocation?.address} 
                             />
                         </div>
 
-                        {/* Modals */}
                         <ModalTemplate isOpen={isChangeModalOpen} onClose={closeChangeModal}>
                             <div className="p-4">
                                 {Object.keys(locationInfo).map((item, index) => (
@@ -476,7 +406,7 @@ export default function TeamDashboard() {
                                 lessonTypes={currentLocation?.lessonTypes} 
                                 lessonSkills={currentLocation?.skillLevels} 
                                 onClose={closeAddModal} 
-                                teamId={userInfo.userData.firebaseId} 
+                                teamId={userInfo?.userData?.firebaseId}
                                 retrievedCoaches={currLocoCoaches} 
                                 locationId={currentLocation?.id} 
                                 events={events} 
