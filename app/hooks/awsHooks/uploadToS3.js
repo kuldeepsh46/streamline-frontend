@@ -1,7 +1,7 @@
 import CONFIG from "@/config";
   
 export const fetchPresignedUrls = async ({files, s3Uri}) => {
-    const response = await fetch(CONFIG.backendRoute+'aws/get-presigned-urls', {
+    const response = await fetch(CONFIG.backendRoute + 'api/aws/get-presigned-urls', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

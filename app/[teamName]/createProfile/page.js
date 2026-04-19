@@ -396,6 +396,7 @@ export default function TeamProfileEditor() {
             teamDescription:teamInfo.teamDescription,
             flattenedTeamName:teamInfo.teamName.toLowerCase().replace(/\s+/g, ''),
             teamName:teamInfo.teamName,
+            status: "Pending",
             uploadTimestamp:new Date(),
           },collectionName:"Team"})
           console.log("just uploaded team info")

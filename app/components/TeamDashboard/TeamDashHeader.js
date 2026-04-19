@@ -9,6 +9,7 @@ export default function TeamDashHeader({selectedPage,setIsLoading,setSelectedPag
 
     const [currPage,setCurrPage]=useState(selectedPage)
     const {userInfo} = useAuth()
+    // console.log("TeamDashHeader userInfo:", userInfo);
     const router = useRouter();
     const [teamName, setTeamName] =useState("");
     const [teamLogo, setTeamLogo] =useState("");
@@ -57,35 +58,46 @@ export default function TeamDashHeader({selectedPage,setIsLoading,setSelectedPag
 
 
             <div className={currPage==="dashboard" ? `text-[16px] font-bold py-[6px] px-[14px] bg-gray-200 rounded-[30px]` :`text-[16px] py-[6px] px-[14px] hover:bg-gray-200 rounded-[30px] font-bold text-gray-400 cursor-pointer`}
-            onClick={()=>{
-                if(userInfo.userData.accountType==="team")
-                {
-                    if(currPage!="dashboard"){
-                    setCurrPage("dashboard")
-                    setSelectedPage("dashboard")
-                    setIsLoading(true)
-                    router.push(`/${teamName.replace(/\s+/g, '').toLowerCase()}/dashboard`)}
-                }else{
-                    router.push(`/user/${userInfo.userData.firebaseId}/dashboard`)
-                }}}>            
+            onClick={() => {
+    if (userInfo?.userData?.accountType === "team") {
+        // Use userInfo directly and provide a fallback string just in case
+        const slug = (userInfo.userData.teamName || teamName || "team")
+            .replace(/\s+/g, '')
+            .toLowerCase();
+
+        if (currPage !== "dashboard") {
+            setCurrPage("dashboard");
+            setSelectedPage("dashboard");
+            setIsLoading(true);
+            router.push(`/${slug}/dashboard`);
+        }
+    } else {
+        router.push(`/user/${userInfo.userData.firebaseId}/dashboard`);
+    }
+}}>            
                 Dashboard
             </div>
             {/* <div className="font-bold text-streamlineBlue text-[20px] mb-[5px]">
                 |
             </div> */}
             <div className={currPage==="profile" ? `text-[16px] font-bold py-[6px] px-[14px] bg-gray-200 rounded-[30px]` :`text-[16px] py-[6px] px-[14px] hover:bg-gray-200 rounded-[30px] font-bold text-gray-400 cursor-pointer`}
-            onClick={()=>{
-                if(userInfo.userData.accountType==="team")
-                {
-                    if(currPage!="profile"){
-                    setCurrPage("profile")
-                    setSelectedPage("profile")
-                    setIsLoading(true)
-                    router.push(`/${teamName.replace(/\s+/g, '').toLowerCase()}/profile`)
-                }
-                }else{
-                    router.push(`/user/${userInfo.userData.firebaseId}/profile`)
-                }}}>
+            onClick={() => {
+    if (userInfo?.userData?.accountType === "team") {
+        // Fallback to a default name or a value from userData if teamName is empty
+        const slug = (userInfo.userData.teamName || teamName || "team")
+            .replace(/\s+/g, '')
+            .toLowerCase();
+
+        if (currPage !== "profile") {
+            setCurrPage("profile");
+            setSelectedPage("profile");
+            setIsLoading(true);
+            router.push(`/${slug}/profile`); // Now it will be /yourteamname/profile
+        }
+    } else {
+        router.push(`/user/${userInfo.userData.firebaseId}/profile`);
+    }
+}}>
                 Profile
             </div>
             </div>

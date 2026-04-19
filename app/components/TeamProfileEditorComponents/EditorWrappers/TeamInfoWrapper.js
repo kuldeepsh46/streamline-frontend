@@ -5,7 +5,7 @@ export default function TeamInfoWrapper({newTeamName,setNewTeamName,teamDescript
     return(
         <>
             <ProfileEntryEditor
-              prompt={"Team Name"}
+              prompt={"School Name"}
               response={newTeamName}
               setResponse={setNewTeamName}
               placeholder={"Team Name"}
@@ -19,7 +19,7 @@ export default function TeamInfoWrapper({newTeamName,setNewTeamName,teamDescript
               }
 
               <ProfileEntryEditor
-              prompt={"Swim Team Description"}
+              prompt={"Swim School Description (Recommended 150 characters min.)"}
               response={teamDescription}
               setResponse={setTeamDescription}
               placeholder={"Talk about your swim team's culture, offerings, history, staff etc..."}

@@ -8,25 +8,36 @@ export default function GoogleAddyEntryEditor({address,setAddress,streetAddress,
     const [errorMessage,setErrorMessage] = useState("")
     const [cityStateError, setCityStateError] = useState("")
 
+    // const parseAddress = (address) => {
+    //   const parts = address.split(",").map(part => part.trim());
+    
+    //   if (parts.length < 5) {
+    //     throw new Error("Address format is invalid. Expected format: 'Street Address, City, State, PostalCode, Country'");
+    //   }
+    
+    //   const [streetAddress, city, statePostal, postalCode, country] = parts;
+    
+    //   const state = statePostal.split(" ")[0];
+    
+    //   return {
+    //     streetAddress,
+    //     city,
+    //     state,
+    //     postalCode,
+    //     country,
+    //   };
+    // };
+
     const parseAddress = (address) => {
-      const parts = address.split(",").map(part => part.trim());
-    
-      if (parts.length < 5) {
-        throw new Error("Address format is invalid. Expected format: 'Street Address, City, State, PostalCode, Country'");
-      }
-    
-      const [streetAddress, city, statePostal, postalCode, country] = parts;
-    
-      const state = statePostal.split(" ")[0];
-    
-      return {
-        streetAddress,
-        city,
-        state,
-        postalCode,
-        country,
-      };
-    };
+  const parts = address.split(",").map(p => p.trim());
+  return {
+    streetAddress: parts[0] || "",
+    city: parts[1] || "",
+    state: parts[2] ? parts[2].split(" ")[0] : "",
+    postalCode: parts[parts.length - 2] || "",
+    country: parts[parts.length - 1] || "" // This will now get "Canada" instead of "c"
+  };
+};
 
     const [isFirstTime, setIsFirstTime] = useState(true)
     useEffect(()=>{
@@ -107,7 +118,7 @@ export default function GoogleAddyEntryEditor({address,setAddress,streetAddress,
               try {
                   const retreivedCoords = await getCoordinatesFromAddress({ address: combinedAddress });
                   setCoords(retreivedCoords);
-                  console.log(retreivedCoords);
+                  // console.log(retreivedCoords);
               } catch (error) {
                   console.log(error);
               }

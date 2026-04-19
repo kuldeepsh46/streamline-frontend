@@ -1,61 +1,69 @@
-import { useAuth } from "@/app/contexts/AuthContext";
-import { auth } from "../../components/firebaseClient";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-  sendPasswordResetEmail,
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut, 
+  sendPasswordResetEmail 
 } from "firebase/auth";
-import { useRouter } from "next/navigation"
+
+// IMPORT ONLY ONCE: Using the client path which is usually the primary init file
+import { auth } from "../../components/firebaseClient"; 
+
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+
 // Signup
-export const emailSignUp = async ({email, password,setLoadingNewPage,noLoading}) => {
+export const emailSignUp = async ({ email, password, setLoadingNewPage, noLoading }) => {
   try {
-    if(!noLoading){setLoadingNewPage(true)}
+    if (!noLoading) { setLoadingNewPage(true); }
     const userCredential = await createUserWithEmailAndPassword(auth, email.toLowerCase(), password);
     return userCredential.user;
   } catch (error) {
-    setLoadingNewPage(false)
+    if (setLoadingNewPage) setLoadingNewPage(false);
     console.error("Signup Error: ", error.message);
     throw error;
   }
 };
 
-export const resetPasword = async(email) => {
-  try{
-
-    await sendPasswordResetEmail(auth,email)
-    console.log("Password reset ok!",email)
-    return(true)
-  }catch(error){
-    console.log(error)
-    return(false)
+// Reset Password
+export const resetPasword = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("Password reset ok!", email);
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
   }
-}
+};
 
 // Login
-export const emailLogin = async ({email, password,setLoadingNewPage,noLoading}) => {
-  
+export const emailLogin = async ({ email, password, setLoadingNewPage, noLoading }) => {
   try {
-    if(!noLoading){setLoadingNewPage(true)}
+    if (!noLoading) { setLoadingNewPage(true); }
     const userCredential = await signInWithEmailAndPassword(auth, email.toLowerCase(), password);
     return userCredential.user;
   } catch (error) {
-    setLoadingNewPage(false)
+    if (setLoadingNewPage) setLoadingNewPage(false);
     console.error("Login Error: ", error.message);
     throw error;
   }
 };
 
 // Logout
-export const logout = async (router,setLoadingNewPage) => {
+export const logout = async (router, setLoadingNewPage) => {
   try {
-    setLoadingNewPage(true)
-    router.push("/")
-    window.location.reload()
+    if (setLoadingNewPage) setLoadingNewPage(true);
+
+    // 1. Perform the sign out first and wait for it to finish
     await signOut(auth);
+
+    // 2. Redirect to the home page using href to force a full state clear
+    // This solves the issue of being "stuck" on a dashboard domain
+    window.location.href = "/"; 
+    
   } catch (error) {
-    setLoadingNewPage(false)
+    if (setLoadingNewPage) setLoadingNewPage(false);
     console.error("Logout Error: ", error.message);
     throw error;
   }

@@ -1,6 +1,6 @@
 
 
-
+const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 const CONFIG = Object.freeze({
     amenitiesIcons:{
         1:{"name":"Swimming Pool", iconName:"PoolIcon.png"},
@@ -11,7 +11,11 @@ const CONFIG = Object.freeze({
         6:{"name":"Free On-site Parking", iconName:"ParkingIcon.png"},
         7:{"name":"Paid On-site Parking", iconName:"PaidParking.jpg"},
     },
-    backendRoute:"https://api.experiencestreamline.com/",
+    // backendRoute:"https://api.experiencestreamline.com/",
+    backendRoute: isLocal 
+    ? "http://localhost:3000/"  // Use your Next.js port
+    : "https://api.experiencestreamline.com/",
+
     lessonTypes:{
         "Private":"One on one with an instructor",
         "Semi-Private":"Less than five other swimmers",

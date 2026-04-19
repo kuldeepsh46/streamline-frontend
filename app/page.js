@@ -179,8 +179,8 @@ export default function Home() {
   const getCommonIds = ({ a, b, c, d }, { useA, useB, useC, useD }) => {
     // Collect only the active sets
     
-    console.log(a, b, c, d)
-    console.log(useA, useB, useC, useD)
+    // console.log(a, b, c, d)
+    // console.log(useA, useB, useC, useD)
     const activeSets = [];
     if (useA) activeSets.push(a);
     if (useB) activeSets.push(b);
@@ -262,19 +262,117 @@ export default function Home() {
     }
   }
 
-  useEffect(()=>{
-    if (locations){
-    const pickedLoco = locations
-    .filter(loco => loco.checked) // Keep only items where checked is true
-    .map(loco => loco.location); 
+  // useEffect(()=>{
+  //   if (locations){
+  //   const pickedLoco = locations
+  //   .filter(loco => loco.checked) // Keep only items where checked is true
+  //   .map(loco => loco.location); 
 
-    const locoIds = new Set(pickedLoco.flatMap(item => citiesToIds[item] || []));
+  //   const locoIds = new Set(pickedLoco.flatMap(item => citiesToIds[item] || []));
 
-    setSelectedLocationIds([...locoIds])
-  }
-  }
-  ,[locations])
+  //   setSelectedLocationIds([...locoIds])
+  // }
+  // }
+  // ,[locations])
+useEffect(() => {
+    const getTeamLocations = async () => {
+      // 1. Get verified locations
+      const locationsData = await getEntriesByConditions({
+        collectionName: "Location",
+        conditions: [{ field: 'status', operator: '==', value: 'Active' }]
+      });
+// console.log("DEBUG: Total Verified Locations found in DB:", locationsData.length);
+//     console.log("DEBUG: Raw Locations Data:", locationsData);
+      const getUniqueDays = (data) => {
+        const daysOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const daysSet = new Set(data.map((item) => item.day?.substring(0, 3)));
+        return daysOrder.filter(day => daysSet.has(day));
+      };
 
+      const getHoursOfOp = (existingData = {}) => (newData) => {
+        return newData.reduce((acc, item) => {
+          const key = `${item.day}${item.hour}`;
+          if (!acc[item.locationId]) acc[item.locationId] = new Set();
+          acc[item.locationId].add(key);
+          return acc;
+        }, existingData);
+      };
+
+      const processHours = getHoursOfOp();
+      let hoursOfOpsToIds = {};
+      const tempCitiesToIds = {};
+      const uniqueCitiesSet = new Set();
+
+      const updatedLocations = await Promise.all(
+        locationsData.map(async (location) => {
+          // Get availability
+          const daysHoursOps = await getEntriesByConditions({
+            collectionName: "OperationDayTime",
+            conditions: [{ field: "locationId", operator: "==", value: location.id }],
+          });
+
+          const uniqueDays = getUniqueDays(daysHoursOps);
+          
+          // Use functional update for locoIdsToHours to avoid render loops
+          setLocoIdsToHours(prev => ({ ...prev, [location.id]: daysHoursOps }));
+
+          // Handle Images
+          const locationImages = await getEntriesByConditions({
+            collectionName: "Images",
+            conditions: [
+              { field: "locationId", operator: "==", value: location.id },
+              { field: "photoType", operator: "==", value: "location" },
+            ],
+          });
+          const listOfLocationImages = locationImages.map((item) => item.imageUrl);
+
+          // Handle City/State Logic
+          const stateLabel = location.state.length < 3 && CONFIG.abbreviationToState[location.state] 
+                             ? CONFIG.abbreviationToState[location.state] 
+                             : location.state;
+          const cityState = `${location.city}, ${stateLabel}`;
+          
+          uniqueCitiesSet.add(cityState);
+          if (!tempCitiesToIds[cityState]) tempCitiesToIds[cityState] = [];
+          tempCitiesToIds[cityState].push(location.id);
+
+          hoursOfOpsToIds = processHours(daysHoursOps);
+
+          // Get Team Info
+          const teamInfo = await getEntriesByConditions({
+            collectionName: "Team",
+            conditions: [{ field: "id", operator: "==", value: location.teamId }],
+          });
+
+          return {
+            ...location,
+            uniqueDays,
+            images: listOfLocationImages,
+            teamInfo: teamInfo.length > 0 ? teamInfo[0] : null,
+          };
+        })
+      );
+
+      // Final State Updates (Only once)
+      const myLocations = Array.from(uniqueCitiesSet).map((city, index) => ({
+        id: index,
+        checked: false,
+        location: city
+      }));
+
+      setCitiesToIds(tempCitiesToIds);
+      setLocations(myLocations);
+      setLocationsToAvailability(hoursOfOpsToIds);
+      setTeamLocations(updatedLocations);
+      setFilteredTeamLocos(updatedLocations);
+      setLoadingTeams(false);
+    };
+
+    if (!isFetchingUserInfo) {
+      getTeamLocations();
+      setLoadingNewPage(false);
+    }
+  }, [isFetchingUserInfo]);
   return (
     <div className="flex  justify-center items-center">
       <DynamicScreen className=" w-[98%]">

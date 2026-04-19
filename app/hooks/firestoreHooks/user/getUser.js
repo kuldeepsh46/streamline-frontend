@@ -12,10 +12,10 @@ const getUserByFirebaseId = async ({firebaseId}) => {
       // Extract the document data
       const userDoc = querySnapshot.docs[0]; // Assuming firebaseId is unique
       const userData = userDoc.data();
-      console.log("User found:", userData);
+      // console.log("User found:", userData);
       return userData; // Return user data
     } else {
-      console.log("No user found with the given firebaseId.");
+      // console.log("No user found with the given firebaseId.");
       return null;
     }
   } catch (error) {
@@ -38,10 +38,10 @@ const getDependantsByFirebaseId = async ({ firebaseId }) => {
         ...doc.data() // Spread the rest of the document fields
       }));
       
-      console.log("Dependants found:", dependants);
+      // console.log("Dependants found:", dependants);
       return dependants; // Return an array with document IDs included
     } else {
-      console.log("No dependants found with the given firebaseId.");
+      // console.log("No dependants found with the given firebaseId.");
       return []; // Return an empty array if no matches
     }
   } catch (error) {
@@ -74,7 +74,7 @@ const getDependantsByFirebaseId = async ({ firebaseId }) => {
   
       // Execute the query
       const querySnapshot = await getDocs(q);
-      console.log("QUERY SNAPS", querySnapshot)
+      // console.log("QUERY SNAPS", querySnapshot)
       // Return true if at least one document matches, otherwise false
       return !querySnapshot.empty;
     } catch (error) {

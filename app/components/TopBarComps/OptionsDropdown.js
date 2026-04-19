@@ -106,10 +106,18 @@ const OptionsDropdown = ({isVisible, onClose, setIsLogin, openLogInModal}) => {
                             Dashboard
                         </div>}
                         <div className='w-full bg-gray-200 h-[1px]'/>
-                        <div className='py-[7px] px-[8px] text-[14px] text-gray-700 w-full hover:bg-gray-100'
+                        {/* <div className='py-[7px] px-[8px] text-[14px] text-gray-700 w-full hover:bg-gray-100'
                         onClick={()=>{logout(router,setLoadingNewPage); onClose()}}>
                             Log out
-                        </div>
+                        </div> */}
+                        {/* // Inside OptionsDropdown.js */}
+<div className='py-[7px] px-[8px] ...'
+    onClick={() => {
+        onClose(); 
+        logout(router, setLoadingNewPage); 
+    }}>
+    Log out
+</div>
                     </div>
 
                     </div>
