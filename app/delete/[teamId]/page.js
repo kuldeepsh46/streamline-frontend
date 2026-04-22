@@ -41,7 +41,7 @@ export default function DeletePage() {
 
                 const teamData = teamSnap.data();
                 batch.update(teamRef, {
-                    status: "inactive",
+                    status: "Inactive",
                     deactivatedAt: new Date().toISOString()
                 });
 
@@ -50,7 +50,7 @@ export default function DeletePage() {
                     const accountQuery = query(collection(db, "Account"), where("firebaseId", "==", teamData.firebaseId));
                     const accountSnap = await getDocs(accountQuery);
                     accountSnap.forEach((accDoc) => {
-                        batch.update(doc(db, "Account", accDoc.id), { status: "inactive" });
+                        batch.update(doc(db, "Account", accDoc.id), { status: "Inactive" });
                     });
                 }
 
@@ -61,10 +61,10 @@ export default function DeletePage() {
                 for (const lDoc of locationsSnap.docs) {
                     const locoId = lDoc.id;
                     
-                    // Mark Location as inactive
-                    batch.update(doc(db, "Location", locoId), { status: "inactive" });
+                    // Mark Location as Inactive
+                    batch.update(doc(db, "Location", locoId), { status: "Inactive" });
 
-                    // IMPORTANT: To be thorough, mark related functional data as inactive 
+                    // IMPORTANT: To be thorough, mark related functional data as Inactive 
                     // This prevents these coaches or lessons from appearing in search filters
                     const subCollections = ["Coach", "LessonType", "TimeBlock", "SkillLevel"];
                     
@@ -72,7 +72,7 @@ export default function DeletePage() {
                         const subQuery = query(collection(db, colName), where("locationId", "==", locoId));
                         const subSnap = await getDocs(subQuery);
                         subSnap.forEach((subDoc) => {
-                            batch.update(doc(db, colName, subDoc.id), { status: "inactive" });
+                            batch.update(doc(db, colName, subDoc.id), { status: "Inactive" });
                         });
                     }
                 }

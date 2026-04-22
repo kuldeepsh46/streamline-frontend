@@ -107,6 +107,7 @@ export default function TeamDashboard() {
     const [currDay, setCurrDay] = useState(new Date())
     const [isCalendarLoading, setIsCalendarLoading] = useState(true)
     const [selectedLocation, setSelectedLocation] = useState(null)
+    const [teamDocId, setTeamDocId] = useState(null)
 
     useEffect(() => {
         const updateCal = async() => {
@@ -149,6 +150,7 @@ export default function TeamDashboard() {
                 
                 if (teamResults && teamResults.length > 0) {
                     const teamDoc = teamResults[0];
+                    setTeamDocId(teamDoc.id);
                     if (teamDoc.status === "inactive") {
                         setIsDeactivated(true);
                     } else if (teamDoc.status !== "Active") {
@@ -406,7 +408,7 @@ export default function TeamDashboard() {
                                 lessonTypes={currentLocation?.lessonTypes} 
                                 lessonSkills={currentLocation?.skillLevels} 
                                 onClose={closeAddModal} 
-                                teamId={userInfo?.userData?.firebaseId}
+                                teamId={teamDocId}
                                 retrievedCoaches={currLocoCoaches} 
                                 locationId={currentLocation?.id} 
                                 events={events} 

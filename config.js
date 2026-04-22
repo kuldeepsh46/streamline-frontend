@@ -14,7 +14,7 @@ const CONFIG = Object.freeze({
     // backendRoute:"https://api.experiencestreamline.com/",
     backendRoute: isLocal 
     ? "http://localhost:3000/"  // Use your Next.js port
-    : "https://api.experiencestreamline.com/",
+    : "https://experiencestreamline.com/",
 
     lessonTypes:{
         "Private":"One on one with an instructor",

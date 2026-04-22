@@ -306,6 +306,7 @@ useEffect(() => {
       const updatedLocations = await Promise.all(
         locationsData.map(async (location) => {
           // Get availability
+          // console.log(location);
           const daysHoursOps = await getEntriesByConditions({
             collectionName: "OperationDayTime",
             conditions: [{ field: "locationId", operator: "==", value: location.id }],
@@ -327,6 +328,7 @@ useEffect(() => {
           const listOfLocationImages = locationImages.map((item) => item.imageUrl);
 
           // Handle City/State Logic
+          // console.log("Processing Location:", location);
           const stateLabel = location.state.length < 3 && CONFIG.abbreviationToState[location.state] 
                              ? CONFIG.abbreviationToState[location.state] 
                              : location.state;

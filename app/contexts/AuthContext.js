@@ -27,9 +27,9 @@ export const AuthProvider = ({ children }) => {
           const userData = await getUserByFirebaseId({ firebaseId: currentUser.uid });
 
           // 🛡️ CRITICAL DEACTIVATION CHECK
-          // If the account is inactive, clear EVERYTHING and redirect.
-          if (userData?.status === "inactive") {
-             console.warn("Access Denied: Account is inactive.");
+          // If the account is Inactive, clear EVERYTHING and redirect.
+          if (userData?.status === "Inactive") {
+             console.warn("Access Denied: Account is Inactive.");
              setUser(null);
              setUserInfo({ "userData": null, "otherAthletes": null });
              setIsFetchingUserInfo(false);
@@ -45,8 +45,8 @@ export const AuthProvider = ({ children }) => {
               fields: { firebaseId: currentUser.uid }
             });
 
-            // Secondary Check: If the team record itself is inactive
-            if (teamInfo[0]?.status === "inactive") {
+            // Secondary Check: If the team record itself is Inactive
+            if (teamInfo[0]?.status === "Inactive") {
               setUser(null);
               setUserInfo({ "userData": null, "otherAthletes": null });
               setIsFetchingUserInfo(false);

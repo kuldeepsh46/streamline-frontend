@@ -130,8 +130,17 @@ export default function AddAvailibilityModal({onClose,setAddAvailibilityModalKey
     const [newCoachNumber,setNewCoachNumber]=useState({phoneNumber:"",isValid:false})
 
 
-    const [coaches,setCoaches]=useState([...retrievedCoaches])
+    const [coaches,setCoaches]=useState(Array.isArray(retrievedCoaches) ? [...retrievedCoaches] : [])
     const [selectedCoachId,setSelectedCoachId] = useState(null)
+    useEffect(() => {
+        if (Array.isArray(retrievedCoaches)) {
+            setCoaches([...retrievedCoaches]);
+        } else {
+            setCoaches([]);
+        }
+        setSelectedCoachId(null);
+    }, [retrievedCoaches, locationId]);
+
     const [reminderQuant,setReminderQuant]=useState(1)
     const [reminderMetric,setReminderMetric]=useState('days')
 
@@ -181,7 +190,7 @@ export default function AddAvailibilityModal({onClose,setAddAvailibilityModalKey
             setHasSubmitted(true)
             const daysOWeekFull = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
             let currEvents = []
-            const coach = selectedCoachId ? coaches[selectedCoachId]:null
+            const coach = selectedCoachId != null ? coaches[selectedCoachId] : null
             for (const date of selectedDates){
                 const startDateTime = consolidateDate({timeObj:startTime,now:date})
                 const newDate = new Date(date)
@@ -429,9 +438,10 @@ export default function AddAvailibilityModal({onClose,setAddAvailibilityModalKey
                             if(newCoachName.length>0 && newCoachNumber.isValid)
                             {
                             setAddAnotherCoach(false); 
-                            setCoaches([...coaches,
-                                {coachName:newCoachName,coachEmail:newCoachEmail,coachPhone:newCoachNumber.phoneNumber}
-                            ])
+                            const newCoach = {coachName:newCoachName,coachEmail:newCoachEmail,coachPhone:newCoachNumber.phoneNumber};
+                            const updatedCoaches = [...coaches, newCoach];
+                            setCoaches(updatedCoaches)
+                            setSelectedCoachId(updatedCoaches.length - 1)
                             await addInfoAsJson({jsonInfo:{coachName:newCoachName,coachPhone:newCoachNumber.isValid?newCoachNumber.phoneNumber:null,coachEmail:newCoachEmail.length>0?newCoachEmail:null,locationId:locationId,teamId:teamId},collectionName:'Coach'})
                             setNewCoachEmail("");setNewCoachName("");setNewCoachNumber({phoneNumber:"",isValid:false})
                             }else{

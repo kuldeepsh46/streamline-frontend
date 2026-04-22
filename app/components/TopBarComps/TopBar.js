@@ -1,6 +1,6 @@
 "use client";
 
-import StreamlineLogo from '../../../public/streamlineLogo.svg'
+import Image from "next/image";
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react';
 import AuthModal from '../AuthModalComps/AuthModal';
@@ -48,11 +48,16 @@ const TopBar = () => {
             WebkitUserSelect: "none", // Safari
             MozUserSelect: "none", // Firefox
             msUserSelect: "none",}} >
-            <button onClick={redirectHome}>
-            {
-                
-                <StreamlineLogo className="w-[130px] h-[50px]"/>
-            }
+            <button type="button" onClick={redirectHome} className="shrink-0">
+                <Image
+                    src="/streamlineLogo.svg"
+                    alt="Streamline"
+                    width={130}
+                    height={50}
+                    priority
+                    unoptimized
+                    className="w-[130px] h-[50px] object-contain"
+                />
             </button>
 
             {!isFetchingUserInfo&&<AccountSection openLogInModal={openModal} setIsLogin={setIsLogin}/>}

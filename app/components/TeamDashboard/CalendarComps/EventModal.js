@@ -21,11 +21,27 @@ import scheduleTwilioSms from "@/app/hooks/twilio/scheduleMessage";
 import { formatEventTime, subtractTime } from "@/app/hooks/miscellaneous";
 
 export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWeekEvents, setEvents,events,currWeekEvents,athletes,auxiliaryStatus,fullAddress}){
-    
+    const [locationData, setLocationData] = useState(null);
     const {userInfo}=useAuth()
 
     // Safety check: if no event is selected, don't render anything
     if (!pickedEvent) return null;
+    useEffect(() => {
+    const fetchLocation = async () => {
+        if (!pickedEvent?.locationId) return;
+
+        const res = await getEntriesByMatching({
+            collectionName: "Location",
+            fields: { id: pickedEvent.locationId }
+        });
+
+        if (res && res[0]) {
+            setLocationData(res[0]);
+        }
+    };
+
+    fetchLocation();
+}, [pickedEvent]);
 
     function processEntries(entries) {
         if (!entries || !Array.isArray(entries)) return { firstEntries: [], secondEntries: [] };
@@ -33,10 +49,13 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
         const secondEntries = new Set();
       
         entries.forEach(entry => {
-          const [first, second] = entry.split('`');
-          if (first && second) {
-            firstEntries.add(first.trim());
-            secondEntries.add(second.trim());
+          // Fix for the console errors: ensure entry is a string before splitting
+          if (typeof entry === 'string' && entry.includes('`')) {
+              const [first, second] = entry.split('`');
+              if (first && second) {
+                firstEntries.add(first.trim());
+                secondEntries.add(second.trim());
+              }
           }
         });
       
@@ -46,8 +65,8 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
         };
       }
       
-    const [selectedSkillsLevels,setSelectedSkillLevels]=useState(null)
-    const [selectedLessonTypes,setSelectedLessonTypes]=useState(null)
+    const [selectedSkillsLevels,setSelectedSkillLevels]=useState([])
+    const [selectedLessonTypes,setSelectedLessonTypes]=useState([])
 
     useEffect(()=>{
         // Added safety check for lessonType
@@ -65,60 +84,66 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
     const handleAcceptRequest = async() => {
         setHasClickedSubmit(true)
         let foundSister=false
-        events.forEach(async(item)=>{
+        
+        // Using a standard loop to handle async/await inside correctly
+        for (const item of events) {
             if (item.id == pickedEvent.availableSister){
+                foundSister = true;
 
-            foundSister=true
+                if (!item.confirmedSister){
+                    const newConfirmedEvent = {
+                        coachEmail:pickedEvent.coachEmail,
+                        coachName:pickedEvent.coachName,
+                        coachPhone:pickedEvent.coachPhone,
+                        createdOn:new Date(),
+                        day:pickedEvent.day,
+                        end:pickedEvent.end,
+                        lessonType:pickedEvent.lessonType,
+                        locationId:pickedEvent.locationId,
+                        reminder:pickedEvent.reminder,
+                        start:pickedEvent.start,
+                        status:"Confirmed",
+                        numberOfAthletes:1,
+                        teamId:pickedEvent.teamId,
+                        title:pickedEvent.title,
+                        availableSister:pickedEvent.availableSister,
+                        athletes:athletes,
+                        contact:pickedEvent.contact
+                    }
 
-            if (!item.confirmedSister){
-                const newConfirmedEvent = {
-                    coachEmail:pickedEvent.coachEmail,
-                    coachName:pickedEvent.coachName,
-                    coachPhone:pickedEvent.coachPhone,
-                    createdOn:new Date(),
-                    day:pickedEvent.day,
-                    end:pickedEvent.end,
-                    lessonType:pickedEvent.lessonType,
-                    locationId:pickedEvent.locationId,
-                    reminder:pickedEvent.reminder,
-                    start:pickedEvent.start,
-                    status:"Confirmed",
-                    numberOfAthletes:1,
-                    teamId:pickedEvent.teamId,
-                    title:pickedEvent.title,
-                    availableSister:pickedEvent.availableSister,
-                    athletes:athletes,
-                    contact:pickedEvent.contact
+                    const createdEntryId = await addInfoAsJson({jsonInfo:newConfirmedEvent,collectionName:"TimeBlock"})
+                    await editingMatchingEntriesByAllFields({collectionName:"LessonBookings",matchParams:{lessonId:pickedEvent.id},updateData:{lessonId:createdEntryId}})
+                    const editedEvents= editJsonById({fieldName:"confirmedSister",fieldValue:createdEntryId,setter:setEvents,id:pickedEvent.availableSister,jsonList:events}) 
+                    await editingMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.availableSister},updateData:{confirmedSister:createdEntryId}})
+                    await deleteMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.id}})
+                    const updatedEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setEvents,jsonList:editedEvents})
+                    const updatedCurrWeekEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setCurrWeekEvents,jsonList:currWeekEvents})
+                    
+                    setEvents([...updatedEvents, {...newConfirmedEvent, id: createdEntryId}])
+                    const newCurrEvents = [...updatedCurrWeekEvents, {...newConfirmedEvent, id: createdEntryId}]
+                    const sortedNewCurrEvents = newCurrEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+                    setCurrWeekEvents(sortedNewCurrEvents)
+                    onClose()
+                } else {
+                    let confirmedSister = events.find(e => e.id === item.confirmedSister);
+                    if (confirmedSister) {
+                        await editingMatchingEntriesByAllFields({collectionName:"LessonBookings",matchParams:{'lessonId':pickedEvent.id},updateData:{lessonId:confirmedSister.id}})
+                        const updatedCurrWeekEvents = appendToJsonSubListById({fieldMappings:{"athletes":athletes,"contact":pickedEvent.contact,"numberOfAthletes":1},setter:setCurrWeekEvents,jsonList:currWeekEvents,id:confirmedSister.id})
+                        const updatedEvents = appendToJsonSubListById({fieldMappings:{"athletes":athletes,"contact":pickedEvent.contact,"numberOfAthletes":1},setter:setEvents,jsonList:events,id:confirmedSister.id})
+                        
+                        const finalizedEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setEvents,jsonList:updatedEvents})
+                        const finalizedCurrWeekEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setCurrWeekEvents,jsonList:updatedCurrWeekEvents})
+                        
+                        setEvents(finalizedEvents)
+                        setCurrWeekEvents(finalizedCurrWeekEvents)
+                        await deleteMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.id}})
+                        await editingMatchingEntriesByAllFields({collectionName:"TimeBlock", matchParams:{"id":confirmedSister.id},updateData:{athletes:[...confirmedSister.athletes,...athletes],contact:[...confirmedSister.contact,...pickedEvent.contact],numberOfAthletes:confirmedSister.numberOfAthletes+1}})
+                        onClose()
+                    }
                 }
+            }
+        }
 
-                const createdEntryId = await addInfoAsJson({jsonInfo:newConfirmedEvent,collectionName:"TimeBlock"})
-                await editingMatchingEntriesByAllFields({collectionName:"LessonBookings",matchParams:{lessonId:pickedEvent.id},updateData:{lessonId:createdEntryId}})
-                const editedEvents= editJsonById({fieldName:"confirmedSister",fieldValue:createdEntryId,setter:setEvents,id:pickedEvent.availableSister,jsonList:events}) 
-                await editingMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.availableSister},updateData:{confirmedSister:createdEntryId}})
-                await deleteMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.id}})
-                const updatedEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setEvents,jsonList:editedEvents})
-                const updatedCurrWeekEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setCurrWeekEvents,jsonList:currWeekEvents})
-                setEvents([...updatedEvents,newConfirmedEvent])
-                const newCurrEvents = [...updatedCurrWeekEvents,newConfirmedEvent]
-                const sortedNewCurrEvents = newCurrEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-                setCurrWeekEvents(sortedNewCurrEvents)
-                onClose()
-            }else{
-                let confirmedSister;
-                events.forEach(item=>{if(item.availableSister==pickedEvent.availableSister){confirmedSister=item}})
-                await editingMatchingEntriesByAllFields({collectionName:"LessonBookings",matchParams:{'lessonId':pickedEvent.id},updateData:{lessonId:confirmedSister.id}})
-                const updatedCurrWeekEvents = appendToJsonSubListById({fieldMappings:{"athletes":athletes,"contact":pickedEvent.contact,"numberOfAthletes":1},setter:setCurrWeekEvents,jsonList:currWeekEvents,id:confirmedSister.id})
-                const updatedEvents = appendToJsonSubListById({fieldMappings:{"athletes":athletes,"contact":pickedEvent.contact,"numberOfAthletes":1},setter:setEvents,jsonList:events,id:confirmedSister.id})
-                const finalizedEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setEvents,jsonList:updatedEvents})
-                const finalizedCurrWeekEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setCurrWeekEvents,jsonList:updatedCurrWeekEvents})
-                setEvents(finalizedEvents)
-                setCurrWeekEvents(finalizedCurrWeekEvents)
-                await deleteMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.id}})
-                await editingMatchingEntriesByAllFields({collectionName:"TimeBlock", matchParams:{"id":item.confirmedSister},updateData:{athletes:[...confirmedSister.athletes,...athletes],contact:[...confirmedSister.contact,...pickedEvent.contact],numberOfAthletes:confirmedSister.numberOfAthletes+1}})
-                onClose()
-            }
-            }
-        })
         if(!foundSister){
             const newConfirmedEvent = {
                 coachEmail:pickedEvent.coachEmail,
@@ -143,8 +168,8 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
             await deleteMatchingEntriesByAllFields({collectionName:"TimeBlock",matchParams:{id:pickedEvent.id}})
             const updatedEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setEvents,jsonList:events})
             const updatedCurrWeekEvents = removeJsonByField({fieldName:"id",fieldValue:pickedEvent.id,setter:setCurrWeekEvents,jsonList:currWeekEvents})
-            setEvents([...updatedEvents,newConfirmedEvent])
-            const newCurrEvents = [...updatedCurrWeekEvents,newConfirmedEvent]
+            setEvents([...updatedEvents, {...newConfirmedEvent, id: createdEntryId}])
+            const newCurrEvents = [...updatedCurrWeekEvents, {...newConfirmedEvent, id: createdEntryId}]
             const sortedNewCurrEvents = newCurrEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
             setCurrWeekEvents(sortedNewCurrEvents)            
             onClose()
@@ -344,7 +369,10 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
                         <div className="flex flex-col mt-[4px]">
                             <div className="flex items-center space-x-[16px]">
                                 <div className="flex w-[22px] py-[12px] justify-center items-center"><LocationIcon/></div>
-                                <div className="flex text-[14px]">{streetAddress}</div>
+                                {/* <div className="flex text-[14px]">{streetAddress}</div> */}
+                                <div className="flex text-[14px]">
+    {locationData?.address || streetAddress || "No address available"}
+</div>
                             </div>
                         </div>
 
@@ -369,19 +397,21 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
                                     {athletes?.length > 0 && (
                                         <>
                                             {pickedEvent.coachName && <div className="flex font-bold ml-[32px] text-[14px] mt-[6px] pt-[4px]">{CONFIG.athleteType}{athletes.length>1?"s":""}</div>}
-                                            {athletes.map((athlete, index) => (
-                                                athlete.athleteInfo?.phoneNumber ? (
-                                                    <PersonEntry key={index} personInfo={{fullName:athlete.fullName, email:athlete.athleteInfo.emailAddress, phoneNumber:athlete.athleteInfo.phoneNumber}}/>
+                                            {athletes.map((athlete, index) => {
+                                                // FIXED: Unique keys for athletes using a combined ID string
+                                                const athleteKey = athlete.id || `athlete-${athlete.fullName}-${index}`;
+                                                return athlete.athleteInfo?.phoneNumber ? (
+                                                    <PersonEntry key={athleteKey} personInfo={{fullName:athlete.fullName, email:athlete.athleteInfo.emailAddress, phoneNumber:athlete.athleteInfo.phoneNumber}}/>
                                                 ) : (
-                                                    <div key={index}>
+                                                    <div key={`${athleteKey}-wrapper`}>
                                                         <PersonEntry personInfo={{fullName:athlete.fullName}}/>
                                                         <div className="leading-[10px] mt-[4px] w-full text-[14px] ml-[73px] mb-[6px]">{athlete.fullName.split(" ")[0]}'s contact:</div>
                                                         {pickedEvent.contact && pickedEvent.contact[index] && (
                                                             <PersonEntry noIcon={true} personInfo={{fullName:pickedEvent.contact[index].fullName, email:pickedEvent.contact[index].emailAddress, phoneNumber:pickedEvent.contact[index].phoneNumber}}/>
                                                         )}
                                                     </div>
-                                                )
-                                            ))}
+                                                );
+                                            })}
                                         </>
                                     )}
                                 </div>
@@ -414,7 +444,7 @@ export default function EventModal ({pickedEvent,streetAddress,onClose,setCurrWe
                                         </div>
                                     )
                                 )}
-                                <div className="font-bold text-streamlineBlue text-[14px] py-[8px] cursor-pointer" onClick={onClose}>Go back to dashboard</div>                
+                                <div className="font-bold text-streamlineBlue text-[14px] py-[8px] cursor-pointer" onClick={onClose}>Go back to dashboard</div>
                             </div>
                         )}
                     </div>

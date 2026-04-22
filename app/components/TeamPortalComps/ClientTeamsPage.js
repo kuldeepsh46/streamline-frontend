@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import DynamicScreen from "../DynamicScreen";
-import StreamlineLogo from "../../../public/streamlineLogo.svg";
 import LoginSignUp from "./LoginSignUp";
 import { useAuth } from "@/app/contexts/AuthContext";
 import LoadingSubScreen from "../loadingSubscreen";
@@ -35,8 +35,16 @@ export default function ClientTeamsPage() {
     >
     <DynamicScreen className="bg-streamlineBlue">
         <div>
-          <button onClick={redirectHome}>
-            <StreamlineLogo className="w-[130px] h-[50px]" />
+          <button type="button" onClick={redirectHome} className="shrink-0">
+            <Image
+              src="/streamlineLogo.svg"
+              alt="Streamline"
+              width={130}
+              height={50}
+              priority
+              unoptimized
+              className="w-[130px] h-[50px] object-contain"
+            />
           </button>
         </div>
 

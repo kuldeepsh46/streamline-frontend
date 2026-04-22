@@ -14,7 +14,7 @@ export default function SwimTeamThumbnail({locationInfo}){
     const router = useRouter();
   
     const images = locationInfo.images
-
+console.log(locationInfo)
     const teamPathName = locationInfo.teamInfo.flattenedTeamName
     
     const handleNext = (event) => {
